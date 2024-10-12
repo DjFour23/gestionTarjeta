@@ -80,7 +80,7 @@ const ExpensesTable = () => {
 
   useEffect(() => {
     fetchExpenses();
-  }, [fetchExpenses]); // Ahora se incluye como dependencia
+  }, []); // Ahora se incluye como dependencia
 
   return (
     <div>
