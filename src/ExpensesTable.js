@@ -31,9 +31,15 @@ const ExpensesTable = () => {
       const { concepto, fecha, monto, cuotas } = expense;
       const montoCuota = monto / cuotas;
       const compraDate = new Date(fecha);
-      let startPaymentDate = new Date(compraDate);
 
-      if (compraDate.getDate() > corteDia) {
+      // Ajustar la fecha para asegurar que no haya discrepancias por zonas horarias
+      const adjustedDate = new Date(
+        compraDate.getTime() + compraDate.getTimezoneOffset() * 60000
+      );
+
+      let startPaymentDate = new Date(adjustedDate);
+
+      if (adjustedDate.getDate() > corteDia) {
         startPaymentDate = addMonths(startPaymentDate, 1);
       }
       startPaymentDate.setDate(5);
@@ -60,7 +66,7 @@ const ExpensesTable = () => {
 
         expensesByMonth[formattedMonth].detalles.push({
           concepto,
-          fecha: format(compraDate, "dd/MM/yyyy"),
+          fecha: format(adjustedDate, "dd/MM/yyyy"), // Mostrar la fecha ajustada correctamente
           montoMensual: new Intl.NumberFormat("es-CO", {
             style: "currency",
             currency: "COP",
@@ -80,7 +86,8 @@ const ExpensesTable = () => {
 
   useEffect(() => {
     fetchExpenses();
-  }, [fetchExpenses]); // Ahora fetchExpenses no cambiará en cada render
+  }, []);
+
   const today = new Date();
 
   return (
@@ -90,7 +97,9 @@ const ExpensesTable = () => {
       ) : (
         Object.keys(expensesByMonth)
           .filter((month) => {
-            const monthDate = new Date(expensesByMonth[month].paymentDate.split("/").reverse().join("-"));
+            const monthDate = new Date(
+              expensesByMonth[month].paymentDate.split("/").reverse().join("-")
+            );
             return monthDate >= today; // Filtrar meses con fechas futuras o actuales
           })
           .map((month, index) => (
@@ -118,7 +127,7 @@ const ExpensesTable = () => {
                   {expensesByMonth[month].detalles.map((expense, idx) => (
                     <tr key={idx}>
                       <td>{expense.concepto}</td>
-                      <td>{expense.fecha}</td>
+                      <td>{expense.fecha}</td> {/* Fecha ajustada */}
                       <td>{expense.montoMensual}</td>
                       <td>{expense.monto}</td>
                     </tr>
