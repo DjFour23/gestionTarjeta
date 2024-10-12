@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { db } from "./firebase"; // Asegúrate de importar correctamente Firebase
 import { collection, getDocs } from "firebase/firestore";
 import { addMonths, format, subMonths } from "date-fns";
@@ -9,7 +9,7 @@ const ExpensesTable = () => {
   const [loading, setLoading] = useState(true);
   const corteDia = 10; // Fecha de corte fija
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "gastos"));
       const data = querySnapshot.docs.map((doc) => ({
@@ -22,7 +22,7 @@ const ExpensesTable = () => {
       console.error("Error al obtener los gastos:", error);
       setLoading(false);
     }
-  };
+  }, []); // No tiene dependencias que cambien
 
   // Procesar gastos por mes
   const processExpenses = (expenses) => {
@@ -80,7 +80,7 @@ const ExpensesTable = () => {
 
   useEffect(() => {
     fetchExpenses();
-  }, []); // Ahora se incluye como dependencia
+  }, [fetchExpenses]); // Ahora fetchExpenses no cambiará en cada render
 
   return (
     <div>
