@@ -81,60 +81,66 @@ const ExpensesTable = () => {
   useEffect(() => {
     fetchExpenses();
   }, [fetchExpenses]); // Ahora fetchExpenses no cambiará en cada render
+  const today = new Date();
 
   return (
     <div>
       {loading ? (
         <p>Cargando gastos...</p>
       ) : (
-        Object.keys(expensesByMonth).map((month, index) => (
-          <div key={index}>
-            <h4>{month}</h4>
-            <p>
-              <strong>Fecha límite de pago:</strong>{" "}
-              {expensesByMonth[month].paymentDate}
-            </p>
-            <p>
-              <strong>Periodo de facturación:</strong>{" "}
-              {expensesByMonth[month].startPeriodDate} -{" "}
-              {expensesByMonth[month].endPeriodDate}
-            </p>
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Concepto</th>
-                  <th>Fecha Adquirida</th>
-                  <th>Monto Mensual</th>
-                  <th>Monto Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expensesByMonth[month].detalles.map((expense, idx) => (
-                  <tr key={idx}>
-                    <td>{expense.concepto}</td>
-                    <td>{expense.fecha}</td>
-                    <td>{expense.montoMensual}</td>
-                    <td>{expense.monto}</td>
+        Object.keys(expensesByMonth)
+          .filter((month) => {
+            const monthDate = new Date(expensesByMonth[month].paymentDate.split("/").reverse().join("-"));
+            return monthDate >= today; // Filtrar meses con fechas futuras o actuales
+          })
+          .map((month, index) => (
+            <div key={index}>
+              <h4>{month}</h4>
+              <p>
+                <strong>Fecha límite de pago:</strong>{" "}
+                {expensesByMonth[month].paymentDate}
+              </p>
+              <p>
+                <strong>Periodo de facturación:</strong>{" "}
+                {expensesByMonth[month].startPeriodDate} -{" "}
+                {expensesByMonth[month].endPeriodDate}
+              </p>
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Fecha Adquirida</th>
+                    <th>Monto Mensual</th>
+                    <th>Monto Total</th>
                   </tr>
-                ))}
-                <tr>
-                  <td colSpan="2">
-                    <strong>Total del mes:</strong>
-                  </td>
-                  <td>
-                    <strong>
-                      {new Intl.NumberFormat("es-CO", {
-                        style: "currency",
-                        currency: "COP",
-                      }).format(expensesByMonth[month].totalMes)}
-                    </strong>
-                  </td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        ))
+                </thead>
+                <tbody>
+                  {expensesByMonth[month].detalles.map((expense, idx) => (
+                    <tr key={idx}>
+                      <td>{expense.concepto}</td>
+                      <td>{expense.fecha}</td>
+                      <td>{expense.montoMensual}</td>
+                      <td>{expense.monto}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td colSpan="2">
+                      <strong>Total del mes:</strong>
+                    </td>
+                    <td>
+                      <strong>
+                        {new Intl.NumberFormat("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                        }).format(expensesByMonth[month].totalMes)}
+                      </strong>
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))
       )}
     </div>
   );
