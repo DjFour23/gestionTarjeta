@@ -9,6 +9,7 @@ const ExpensesTable = () => {
   const [loading, setLoading] = useState(true);
   const corteDia = 10; // Fecha de corte fija
 
+  // Usamos useCallback para evitar recrear esta función en cada render
   const fetchExpenses = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "gastos"));
@@ -22,7 +23,7 @@ const ExpensesTable = () => {
       console.error("Error al obtener los gastos:", error);
       setLoading(false);
     }
-  }, []); // No tiene dependencias que cambien
+  }, []); // No tiene dependencias que cambien, solo se crea una vez
 
   // Procesar gastos por mes
   const processExpenses = (expenses) => {
@@ -32,7 +33,7 @@ const ExpensesTable = () => {
       const montoCuota = monto / cuotas;
       const compraDate = new Date(fecha);
 
-      // Ajustar la fecha para asegurar que no haya discrepancias por zonas horarias
+      // Ajustar la fecha para evitar discrepancias de zonas horarias
       const adjustedDate = new Date(
         compraDate.getTime() + compraDate.getTimezoneOffset() * 60000
       );
@@ -84,9 +85,10 @@ const ExpensesTable = () => {
     setExpensesByMonth(expensesByMonth);
   };
 
+  // Incluimos fetchExpenses como dependencia en useEffect para evitar la advertencia de linting
   useEffect(() => {
     fetchExpenses();
-  }, []);
+  }, [fetchExpenses]);
 
   const today = new Date();
 
