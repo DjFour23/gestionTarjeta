@@ -9,7 +9,6 @@ const ExpensesTable = () => {
   const [loading, setLoading] = useState(true);
   const corteDia = 10; // Fecha de corte fija
 
-  // Usamos useCallback para evitar recrear esta función en cada render
   const fetchExpenses = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "gastos"));
@@ -23,7 +22,7 @@ const ExpensesTable = () => {
       console.error("Error al obtener los gastos:", error);
       setLoading(false);
     }
-  }, []); // No tiene dependencias que cambien, solo se crea una vez
+  }, []); // No tiene dependencias que cambien
 
   // Procesar gastos por mes
   const processExpenses = (expenses) => {
@@ -33,7 +32,7 @@ const ExpensesTable = () => {
       const montoCuota = monto / cuotas;
       const compraDate = new Date(fecha);
 
-      // Ajustar la fecha para evitar discrepancias de zonas horarias
+      // Ajustar la fecha para asegurar que no haya discrepancias por zonas horarias
       const adjustedDate = new Date(
         compraDate.getTime() + compraDate.getTimezoneOffset() * 60000
       );
@@ -85,24 +84,43 @@ const ExpensesTable = () => {
     setExpensesByMonth(expensesByMonth);
   };
 
-  // Incluimos fetchExpenses como dependencia en useEffect para evitar la advertencia de linting
   useEffect(() => {
     fetchExpenses();
   }, [fetchExpenses]);
 
   const today = new Date();
 
+  // Ordenar los meses cronológicamente
+  const sortedMonths = Object.keys(expensesByMonth).sort((a, b) => {
+    const dateA = new Date(expensesByMonth[a].paymentDate.split("/").reverse().join("-"));
+    const dateB = new Date(expensesByMonth[b].paymentDate.split("/").reverse().join("-"));
+    return dateA - dateB; // Ordenar por fecha
+  });
+
   return (
     <div>
       {loading ? (
         <p>Cargando gastos...</p>
       ) : (
-        Object.keys(expensesByMonth)
+        sortedMonths
           .filter((month) => {
-            const monthDate = new Date(
+            const paymentDate = new Date(
               expensesByMonth[month].paymentDate.split("/").reverse().join("-")
             );
-            return monthDate >= today; // Filtrar meses con fechas futuras o actuales
+
+            // Logs de depuración para verificar fechas
+            console.log("Mes:", month);
+            console.log("Fecha de pago:", expensesByMonth[month].paymentDate);
+            console.log("Fecha de pago (objeto Date):", paymentDate);
+            console.log("Fecha actual (today):", today);
+
+            // Mantener el reporte de un mes visible hasta su fecha de pago (día 5 del siguiente mes)
+            return (
+              paymentDate >= today || // Mostrar meses con fecha de pago futura
+              (paymentDate.getMonth() === today.getMonth() &&
+                paymentDate.getFullYear() === today.getFullYear()) || // Mostrar el mes actual
+              (paymentDate > today && today.getDate() < 5) // Mostrar el mes anterior si aún no ha llegado el 5
+            );
           })
           .map((month, index) => (
             <div key={index}>
