@@ -8,6 +8,7 @@ const AllExpensesTable = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null); // Para saber qué gasto se está editando
   const [updatedExpense, setUpdatedExpense] = useState({ concepto: '', monto: '', cuotas: '' }); // Para almacenar los datos de edición
+  const today = new Date(); // Obtener la fecha actual
 
   const fetchExpenses = async () => {
     try {
@@ -44,6 +45,15 @@ const AllExpensesTable = () => {
     fetchExpenses();
   }, []);
 
+  // Filtrar los gastos que aún no han sido pagados
+  const filteredExpenses = expenses.filter((expense) => {
+    const { cuotas, fecha } = expense;
+    const paymentDate = new Date(fecha);
+    paymentDate.setDate(paymentDate.getDate() + (cuotas * 30)); // Suponiendo 30 días por cuota
+
+    return today < paymentDate; // Mostrar solo si no ha pasado la fecha de pago
+  });
+
   return (
     <div className="table-responsive">
       {loading ? (
@@ -60,7 +70,7 @@ const AllExpensesTable = () => {
             </tr>
           </thead>
           <tbody>
-            {expenses.map((expense) => (
+            {filteredExpenses.map((expense) => (
               <tr key={expense.id}>
                 {editingId === expense.id ? ( // Si estamos editando, mostrar campos de entrada
                   <>
