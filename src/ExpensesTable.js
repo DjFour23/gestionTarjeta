@@ -116,10 +116,7 @@ const ExpensesTable = () => {
 
             // Mantener el reporte de un mes visible hasta su fecha de pago (día 5 del siguiente mes)
             return (
-              paymentDate >= today || // Mostrar meses con fecha de pago futura
-              (paymentDate.getMonth() === today.getMonth() &&
-                paymentDate.getFullYear() === today.getFullYear()) || // Mostrar el mes actual
-              (paymentDate > today && today.getDate() < 5) // Mostrar el mes anterior si aún no ha llegado el 5
+              paymentDate >= today
             );
           })
           .map((month, index) => (
