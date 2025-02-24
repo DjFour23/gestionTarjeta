@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { db } from "./firebase"; // Asegúrate de importar correctamente Firebase
+import { db } from "./firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
-import "bootstrap/dist/css/bootstrap.min.css"; // Asegúrate de importar Bootstrap
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const AllExpensesTable = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null); // Para saber qué gasto se está editando
-  const [updatedExpense, setUpdatedExpense] = useState({ concepto: '', monto: '', cuotas: '' }); // Para almacenar los datos de edición
-  const today = new Date(); // Obtener la fecha actual
+  const [editingId, setEditingId] = useState(null);
+  const [updatedExpense, setUpdatedExpense] = useState({ concepto: "", monto: "", cuotas: "" });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const today = new Date();
 
   const fetchExpenses = async () => {
     try {
@@ -27,15 +28,15 @@ const AllExpensesTable = () => {
 
   const handleEdit = (expense) => {
     setEditingId(expense.id);
-    setUpdatedExpense({ concepto: expense.concepto, monto: expense.monto, cuotas: expense.cuotas }); // Cargar datos en el estado
+    setUpdatedExpense({ concepto: expense.concepto, monto: expense.monto, cuotas: expense.cuotas });
   };
 
   const handleUpdate = async (id) => {
     try {
       const expenseDoc = doc(db, "gastos", id);
       await updateDoc(expenseDoc, updatedExpense);
-      setEditingId(null); // Salir del modo de edición
-      fetchExpenses(); // Actualiza la lista después de editar
+      setEditingId(null);
+      fetchExpenses();
     } catch (error) {
       console.error("Error al actualizar el gasto:", error);
     }
@@ -45,13 +46,37 @@ const AllExpensesTable = () => {
     fetchExpenses();
   }, []);
 
-  // Filtrar los gastos que aún no han sido pagados
   const filteredExpenses = expenses.filter((expense) => {
     const { cuotas, fecha } = expense;
     const paymentDate = new Date(fecha);
-    paymentDate.setDate(paymentDate.getDate() + (cuotas * 30)); // Suponiendo 30 días por cuota
+    paymentDate.setDate(paymentDate.getDate() + cuotas * 30);
+    return today < paymentDate;
+  });
 
-    return today < paymentDate; // Mostrar solo si no ha pasado la fecha de pago
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedExpenses = [...filteredExpenses].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    if (sortConfig.key === "fecha") {
+      aValue = new Date(aValue);
+      bValue = new Date(bValue);
+    } else {
+      aValue = Number(aValue);
+      bValue = Number(bValue);
+    }
+
+    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
   });
 
   return (
@@ -63,16 +88,22 @@ const AllExpensesTable = () => {
           <thead>
             <tr>
               <th>Concepto</th>
-              <th>Fecha</th>
-              <th>Monto</th>
-              <th>Cuotas</th>
+              <th onClick={() => handleSort("fecha")} style={{ cursor: "pointer" }}>
+                Fecha {sortConfig.key === "fecha" ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+              </th>
+              <th onClick={() => handleSort("monto")} style={{ cursor: "pointer" }}>
+                Monto {sortConfig.key === "monto" ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+              </th>
+              <th onClick={() => handleSort("cuotas")} style={{ cursor: "pointer" }}>
+                Cuotas {sortConfig.key === "cuotas" ? (sortConfig.direction === "asc" ? "↑" : "↓") : ""}
+              </th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filteredExpenses.map((expense) => (
+            {sortedExpenses.map((expense) => (
               <tr key={expense.id}>
-                {editingId === expense.id ? ( // Si estamos editando, mostrar campos de entrada
+                {editingId === expense.id ? (
                   <>
                     <td>
                       <input
@@ -82,7 +113,7 @@ const AllExpensesTable = () => {
                         onChange={(e) => setUpdatedExpense({ ...updatedExpense, concepto: e.target.value })}
                       />
                     </td>
-                    <td>{expense.fecha}</td> {/* Muestra la fecha original, no editable */}
+                    <td>{expense.fecha}</td>
                     <td>
                       <input
                         type="number"
@@ -100,8 +131,12 @@ const AllExpensesTable = () => {
                       />
                     </td>
                     <td>
-                      <button className="btn btn-success" onClick={() => handleUpdate(expense.id)}>Guardar</button>
-                      <button className="btn btn-secondary" onClick={() => setEditingId(null)}>Cancelar</button>
+                      <button className="btn btn-success" onClick={() => handleUpdate(expense.id)}>
+                        Guardar
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </button>
                     </td>
                   </>
                 ) : (
@@ -111,7 +146,9 @@ const AllExpensesTable = () => {
                     <td>{expense.monto}</td>
                     <td>{expense.cuotas}</td>
                     <td>
-                      <button className="btn btn-warning" onClick={() => handleEdit(expense)}>Editar</button>
+                      <button className="btn btn-warning" onClick={() => handleEdit(expense)}>
+                        Editar
+                      </button>
                     </td>
                   </>
                 )}
